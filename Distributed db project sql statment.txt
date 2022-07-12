@@ -1,0 +1,213 @@
+Database project(type and tables)
+1.----create type memebr in lib
+create or replace type member_T as object
+(Fname varchar2(20),
+Lname varchar2(20),
+mid varchar2(20)) not final
+/
+--create table member
+create table member of member_T
+(mid not null,
+primary key(mid));
+
+2. create or replace type student_T under member_T
+(dept varchar2(20),
+batch varchar2(20))
+/
+--create table under student_T
+
+create table studen of student_T
+(mid not null,
+primary key(mid));
+
+3. create staff type
+create or replace type staff under member_T
+(salary varchar2(20),
+position varchar2(20)) 
+/
+---create table for staff
+create table staff_Table of staff
+(mid not null,
+primary key(mid));
+
+4. ----create type guest under member_T
+ create or replace type guest under member_T
+(phone varchar2(20),
+location varchar2(20)) 
+/
+.....create table for guest
+create table guest_T of guest
+(mid not null,
+primary key(mid));
+
+5.type book
+create or replace type book as object
+(isbn varchar2(20),
+title varchar2(20),
+author varchar2(20),
+copy varchar2(20),
+year varchar2(20)) 
+/
+---table book
+create table book_T of book
+(isbn not null,
+primary key(isbn));
+6.create librarian table as table not object table
+
+create table lib_t
+(libid varchar2(10),
+fname varchar2(10),
+lname varchar2(10),
+phone varchar2(10),
+address varchar2(10));
+synonym
+create table lib
+(libid varchar2(10),
+fname varchar2(10),
+lname varchar2(10),
+phone varchar2(10),
+address varchar2(10));
+
+7.create table for issue
+create table issue
+(isbn varchar2(20),
+mid varchar2(20),
+issuedate varchar2(20),
+duedate varchar2(20));
+
+----steps to create distributed database
+
+step 1:create connection between two pc
+step 2:configre net service (sid,ip address,port,listner ) for remote pc(listner.org,tnsname)
+step 3:check the connectoin between two db
+step4 :create database link at the server
+step 5:test the link
+you can also configure using GUI or SQL plus
+
+----retrive data from local pc 
+select * from member; 
+select * from studen;
+select * from staff_Table;
+select * from guest_T;
+select * from book_T; 
+select * from lib_t; 
+select * from issue; 
+
+////////
+
+
+CONNECTING TO REMOTE SITES - CREATING DATABASE LINKS TO ACCESS DATA ON REMOTE - SITE 1
+CREATE PUBLIC DATABASE LINK site1
+CONNECT TO system
+IDENTIFIED BY "122"
+USING '10.139.20.230/lib';
+
+--CONNECTING TO REMOTE SITES - CREATING DATABASE LINKS TO ACCESS DATA ON REMOTE -SITE 2
+create public database link site2
+connect to system
+identified by TEKU
+using '10.139.20.164/uog';
+
+create table to remote database
+create table lib_t@site1 (name varchar2(10));
+ERROR at line 1:
+ORA-02021: DDL operations are not allowed on a remote database
+use this command to fix the errors happen
+exec dbms_utility.exec_ddl_statement@fasil('create table lib_t (name varchar2(10))');
+DESC lib_t;
+exec dbms_utility.exec_ddl_statement@site2('create table f (name varchar2(10))');
+DESC lib_t ;
+exec dbms_utility.exec_ddl_statement@remotedb('create table min(name varchar2(10))');
+DESC lib_t ;
+exec dbms_utility.exec_ddl_statement@library('create table f (name varchar2(10))');
+DESC lib_t ;
+
+INSERT,UPDATE,VIEW,SELECT,.......THEN COMMIT;
+INSERT INTO lib_t@site1 VALUES('alex');
+COMMIT;
+UPDATE F*site1 name='alxeo' WHERE name='alex';
+COMMIT;
+ 
+ 
+--ACCESSING DATA FROM LOCAL SITE USING DB LINKS
+--ACCESSING DATA FROM LOCAL SITE
+SELECT * FROM studen;
+
+--ACCESSING DATA FROM REMOTE SITES  Site 1
+SELECT *FROM lib_t@site1;
+
+--ACCESSING DATA FROM REMOTE SITES - Site 2
+SELECT *FROM issue@site2;
+
+--DISPLAY data FROM ALL SITES(union)
+SELECT * FROM   studen UNION SELECT *FROM lib_t@site1 UNION SELECT *FROM issue@site2
+
+--CREATING SYSNOYMS
+CREATE OR REPLACE SYNONYM sissue FOR issue@site2;
+CREATE OR REPLACE SYNONYM issue FOR issue@remotedb;
+
+--CREATING SYSNOYMS TO ACCESS REMOTE DATA - SITE 1
+CREATE OR REPLACE SYNONYM slib_t FOR lib_t@site1;
+SELECT *FROM slib_t;
+
+SELECT fname, lname,isbn,mid from studen,
+FROM emp e, dept d
+WHERE e.deptno = d.deptno;
+
+--ACCESSING FROM REMOTE SITES USING SYNONYM - SITE 1 AND SITE 2
+SELECT *FROM sissue UNION SELECT * FROM slib_t;
+///
+SELECT *FROM issue1@remotedb UNION SELECT * FROM issue;(correct)
+select * from issue union select * from issue1@remotedb
+///
+difference 
+union and union all
+select fname from studen union select fname from staff_table
+select fname from studen union all select fname from staff_table
+select fname from studen intersect select fname from staff_table(common row)
+select fname from studen minus select fname from staff_table(only unique data from table one)
+union: select only distnict rows,but union all selects all avaliable rows
+intersect:retrive data which is avaliable from two table
+minus:retrive only the first data from first table not the second table
+///
+
+--ACCESSING FROM LOCAL AND REMOTE SITES USING SYNONYM - LOCAL SITE + SITE 1 + SITE 2
+SELECT *FROM studen UNION SELECT *FROM sissue UNION SELECT * FROM slib_t;
+
+---how to insert data to remote site using interface
+use the following code before and after the connection:
+    1.  con.setAutoCommit(false);(before the connection)
+     2. con.commit();(after the operation
+
+
+---how to insert data to remote site and local site at the same time using java interface
+///
+-----how to create view
+. for book table(book_t)
+•
+.CREATE VIEW vbook_t AS SELECT * from book_t WHERE copy<=20;
+for studen
+.CREATE VIEW vbatchstuden AS SELECT * from studen WHERE batch>=2nd ;
+.CREATE VIEW vbatchstuden AS SELECT * from studen WHERE batch>=2nd ;
+
+ . for staff table
+.CREATE VIEW vsalarystaff_table AS SELECT * from staff_table WHERE salary>=6000 ; 
+.for issue
+Create view vvissue  as select fname,lname,mid,isbn,title,auhor from studen,book_T;
+  
+Create view issuebook select as mid,fname,lname,isbn,auhor,title from student,book_T 
+   where book_T.isbn=issue.isbn;
+view for number of record 
+SELECT COUNT(*) FROM book_t union SELECT COUNT(*) FROM book_t;
+
+///
+select name from v$database;
+///
+User
+1.	Admin
+2.	registrar
+3.	infoupdater
+Role
+1.	Admin_role
+2.	register_role
+3.	infoupdate_role
